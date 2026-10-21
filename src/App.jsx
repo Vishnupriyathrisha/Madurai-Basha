@@ -1,4 +1,12 @@
+
 import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import WelcomeScreen from "./components/WelcomeScreen";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -9,13 +17,23 @@ import Contact from "./components/Contact";
 import BookATable from "./components/BookATable";
 import Footer from "./components/Footer";
 
-function App() {
+import CustomerLogin from "./components/CustomerLogin";
+import CustomerRegister from "./components/CustomerRegister";
+
+import AdminLogin from "./components/AdminLogin";
+import AdminDashboard from "./components/AdminDashboard";
+
+function ProtectedRoute({ children }) {
+  const token = sessionStorage.getItem("adminToken");
+
+  return token ? children : <Navigate to="/admin/login" replace />;
+}
+
+function RestaurantWebsite() {
   const [showWelcome, setShowWelcome] = useState(true);
 
   return (
     <>
-      {/* MAIN WEBSITE */}
-
       <main
         id="home"
         style={{
@@ -23,40 +41,55 @@ function App() {
           background: "#FFF8EE",
         }}
       >
-        {/* NAVBAR */}
         <Navbar />
-
-        {/* HOME / HERO */}
         <Home />
-
-        {/* ABOUT */}
         <About />
-
-        {/* MENU */}
         <Menu />
-
-        {/* GALLERY */}
         <Gallery />
-
-        {/* CONTACT */}
         <Contact />
-
-        {/* BOOKING */}
         <BookATable />
-
         <Footer />
       </main>
 
-      {/* WELCOME SCREEN */}
-
       {showWelcome && (
         <WelcomeScreen
-          onComplete={() => {
-            setShowWelcome(false);
-          }}
+          onComplete={() => setShowWelcome(false)}
         />
       )}
     </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<RestaurantWebsite />} />
+
+        <Route path="/login" element={<CustomerLogin />} />
+
+        <Route path="/register" element={<CustomerRegister />} />
+        
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

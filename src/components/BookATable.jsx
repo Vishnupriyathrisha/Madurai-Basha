@@ -1,3 +1,6 @@
+import { useState } from "react";
+import axios from "axios";
+
 import {
   Box,
   Container,
@@ -6,6 +9,8 @@ import {
   Stack,
   TextField,
   MenuItem,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
@@ -76,6 +81,74 @@ const textFieldStyle = {
 };
 
 export default function BookATable() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    date: "",
+    time: "",
+    guests: "",
+    occasion: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [alertMessage, setAlertMessage] = useState({
+    severity: "",
+    message: "",
+  });
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setAlertMessage({ severity: "", message: "" });
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/reservations",
+        {
+          ...formData,
+          guests: Number(formData.guests),
+        }
+      );
+
+      setAlertMessage({
+        severity: "success",
+        message:
+          response.data?.message ||
+          "Your table reservation was submitted successfully!",
+      });
+
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        date: "",
+        time: "",
+        guests: "",
+        occasion: "",
+        message: "",
+      });
+    } catch (error) {
+      setAlertMessage({
+        severity: "error",
+        message:
+          error.response?.data?.message ||
+          "Unable to submit your reservation. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       id="booking"
@@ -506,6 +579,7 @@ export default function BookATable() {
           >
             <Box
               component="form"
+              onSubmit={handleSubmit}
               sx={{
                 height: "100%",
                 p: {
@@ -596,6 +670,23 @@ export default function BookATable() {
                 </Typography>
               </Box>
 
+              {alertMessage.message && (
+                <Alert
+                  severity={alertMessage.severity}
+                  onClose={() =>
+                    setAlertMessage({ severity: "", message: "" })
+                  }
+                  sx={{
+                    position: "relative",
+                    zIndex: 1,
+                    mb: 2.5,
+                    borderRadius: "12px",
+                  }}
+                >
+                  {alertMessage.message}
+                </Alert>
+              )}
+
               {/* ================= FORM FIELDS ================= */}
 
               <Grid
@@ -618,6 +709,10 @@ export default function BookATable() {
                     fullWidth
                     label="Your Name"
                     placeholder="Enter your name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
                     variant="outlined"
                     sx={textFieldStyle}
                   />
@@ -635,6 +730,33 @@ export default function BookATable() {
                     fullWidth
                     label="Phone Number"
                     placeholder="+91"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    type="tel"
+                    required
+                    variant="outlined"
+                    sx={textFieldStyle}
+                  />
+                </Grid>
+
+                {/* Email */}
+
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                  }}
+                >
+                  <TextField
+                    fullWidth
+                    type="email"
+                    label="Email Address"
+                    placeholder="you@example.com"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
                     variant="outlined"
                     sx={textFieldStyle}
                   />
@@ -652,6 +774,10 @@ export default function BookATable() {
                     fullWidth
                     type="date"
                     label="Date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    required
                     InputLabelProps={{
                       shrink: true,
                     }}
@@ -672,6 +798,10 @@ export default function BookATable() {
                     fullWidth
                     type="time"
                     label="Preferred Time"
+                    name="time"
+                    value={formData.time}
+                    onChange={handleChange}
+                    required
                     InputLabelProps={{
                       shrink: true,
                     }}
@@ -692,7 +822,10 @@ export default function BookATable() {
                     fullWidth
                     select
                     label="Number of Guests"
-                    defaultValue=""
+                    name="guests"
+                    value={formData.guests}
+                    onChange={handleChange}
+                    required
                     variant="outlined"
                     sx={{
                       ...textFieldStyle,
@@ -734,7 +867,7 @@ export default function BookATable() {
                       6 Guests
                     </MenuItem>
 
-                    <MenuItem value="7+">
+                    <MenuItem value="7">
                       7+ Guests
                     </MenuItem>
                   </TextField>
@@ -752,7 +885,9 @@ export default function BookATable() {
                     fullWidth
                     select
                     label="Occasion"
-                    defaultValue=""
+                    name="occasion"
+                    value={formData.occasion}
+                    onChange={handleChange}
                     variant="outlined"
                     sx={{
                       ...textFieldStyle,
@@ -790,6 +925,9 @@ export default function BookATable() {
                     rows={3}
                     label="Special Request"
                     placeholder="Any special request or message..."
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
                     variant="outlined"
                     sx={textFieldStyle}
                   />
@@ -873,7 +1011,8 @@ export default function BookATable() {
 
               <Box
                 component="button"
-                type="button"
+                type="submit"
+                disabled={loading}
                 sx={{
                   position: "relative",
                   zIndex: 1,
@@ -909,6 +1048,12 @@ export default function BookATable() {
                   "&:active": {
                     transform: "translateY(0)",
                   },
+
+                  "&:disabled": {
+                    cursor: "not-allowed",
+                    opacity: 0.75,
+                    transform: "none",
+                  },
                 }}
               >
                 <Stack
@@ -917,14 +1062,21 @@ export default function BookATable() {
                   justifyContent="center"
                   spacing={1}
                 >
-                  <CelebrationRoundedIcon
-                    sx={{
-                      fontSize: 20,
-                    }}
-                  />
+                  {loading ? (
+                    <CircularProgress
+                      size={20}
+                      sx={{ color: "#3A0F16" }}
+                    />
+                  ) : (
+                    <CelebrationRoundedIcon
+                      sx={{
+                        fontSize: 20,
+                      }}
+                    />
+                  )}
 
                   <span>
-                    RESERVE MY TABLE
+                    {loading ? "SUBMITTING RESERVATION..." : "RESERVE MY TABLE"}
                   </span>
                 </Stack>
               </Box>

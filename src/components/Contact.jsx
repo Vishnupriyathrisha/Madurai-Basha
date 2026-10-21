@@ -1,4 +1,16 @@
-import { Box, Container, Grid, Typography, Stack } from "@mui/material";
+import { useState } from "react";
+import axios from "axios";
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  Stack,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
 
 import RestaurantRoundedIcon from "@mui/icons-material/RestaurantRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
@@ -178,7 +190,64 @@ function ContactInfoCard({ item, index }) {
   );
 }
 
+const initialContactForm = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+};
+
+const contactFieldStyle = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
+    backgroundColor: "rgba(255,255,255,0.82)",
+    color: "#3F2024",
+    "& fieldset": { borderColor: "rgba(128,25,38,0.24)" },
+    "&:hover fieldset": { borderColor: "#9B7620" },
+    "&.Mui-focused fieldset": { borderColor: "#8B1E2D" },
+  },
+  "& .MuiInputLabel-root": { color: "#75645E" },
+  "& .MuiInputLabel-root.Mui-focused": { color: "#8B1E2D" },
+};
+
 export default function Contact() {
+  const [formData, setFormData] = useState(initialContactForm);
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ severity: "", message: "" });
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setFeedback({ severity: "", message: "" });
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/contact",
+        formData
+      );
+      setFeedback({
+        severity: "success",
+        message: response.data.message || "Your message has been sent successfully!",
+      });
+      setFormData(initialContactForm);
+    } catch (error) {
+      setFeedback({
+        severity: "error",
+        message:
+          error.response?.data?.message ||
+          "Unable to send your message right now. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       id="contact"
@@ -872,6 +941,136 @@ export default function Contact() {
             </Stack>
           </Grid>
         </Grid>
+
+        {/* ================= CONTACT MESSAGE FORM ================= */}
+        <Box
+          component="section"
+          sx={{
+            mt: { xs: 5, md: 7 },
+            p: { xs: 2.5, sm: 4, md: 5 },
+            borderRadius: { xs: "22px", md: "28px" },
+            background: "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(247,236,223,0.9))",
+            border: "1px solid rgba(128,25,38,0.18)",
+            boxShadow: "0 20px 50px rgba(75,20,25,0.10)",
+            animation: "contactCardIn 0.8s ease both",
+          }}
+        >
+          <Box sx={{ textAlign: "center", mb: 3.5 }}>
+            <Typography
+              sx={{
+                color: "#8B1E2D",
+                fontSize: "0.72rem",
+                fontWeight: 800,
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+              }}
+            >
+              GET IN TOUCH
+            </Typography>
+            <Typography
+              sx={{
+                mt: 1,
+                color: "#3F2024",
+                fontFamily: "Georgia, serif",
+                fontSize: { xs: "1.8rem", sm: "2.35rem" },
+                fontWeight: 700,
+              }}
+            >
+              Send Us a Message
+            </Typography>
+            <Typography
+              sx={{
+                mt: 1,
+                color: "#75645E",
+                fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                lineHeight: 1.8,
+              }}
+            >
+              Have a question or feedback? We would love to hear from you.
+            </Typography>
+          </Box>
+
+          {feedback.message && (
+            <Alert
+              severity={feedback.severity}
+              onClose={() => setFeedback({ severity: "", message: "" })}
+              sx={{ mb: 2.5, borderRadius: "12px" }}
+            >
+              {feedback.message}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleSubmit} noValidate={false}>
+            <Grid container spacing={2.2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth required name="name" label="Your Name"
+                  placeholder="Enter your name" value={formData.name}
+                  onChange={handleChange} sx={contactFieldStyle}
+                  inputProps={{ maxLength: 100 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth required name="email" type="email" label="Email Address"
+                  placeholder="you@example.com" value={formData.email}
+                  onChange={handleChange} sx={contactFieldStyle}
+                  inputProps={{ maxLength: 150 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth name="phone" type="tel" label="Phone Number (Optional)"
+                  placeholder="Enter your phone number" value={formData.phone}
+                  onChange={handleChange} sx={contactFieldStyle}
+                  inputProps={{ maxLength: 20 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth required name="subject" label="Subject"
+                  placeholder="What is your message about?" value={formData.subject}
+                  onChange={handleChange} sx={contactFieldStyle}
+                  inputProps={{ maxLength: 150 }}
+                />
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  fullWidth required multiline minRows={4} name="message" label="Your Message"
+                  placeholder="Write your message here..." value={formData.message}
+                  onChange={handleChange} sx={contactFieldStyle}
+                  inputProps={{ maxLength: 2000 }}
+                />
+              </Grid>
+              <Grid size={12}>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  fullWidth
+                  variant="contained"
+                  startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <EmailRoundedIcon />}
+                  sx={{
+                    py: 1.6,
+                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, #8B1E2D, #5A1520)",
+                    color: "#FFF8E8",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    boxShadow: "0 10px 25px rgba(91,25,30,0.18)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #6F1826, #451019)",
+                      boxShadow: "0 14px 30px rgba(91,25,30,0.25)",
+                    },
+                    "&.Mui-disabled": { color: "rgba(255,248,232,0.7)" },
+                  }}
+                >
+                  {loading ? "SENDING MESSAGE..." : "SEND MESSAGE"}
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
+
       </Container>
     </Box>
   );
